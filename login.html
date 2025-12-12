@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вход - Түшүм</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Pangolin&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            overflow: hidden;
+            height: 100vh;
+            position: relative;
+        }
+
+        #map {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            filter: brightness(0.85) contrast(1.1) saturate(1.2);
+        }
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(180deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.5) 100%);
+            z-index: 2;
+        }
+
+        .login-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 3;
+            text-align: center;
+            color: white;
+            width: 100%;
+            max-width: 700px;
+            padding: 40px;
+        }
+
+        .login-subtitle {
+            font-family: 'Montserrat', regular;
+            font-size: 30px;
+            font-weight: 400;
+            margin-bottom: 20px;
+            text-shadow: 0 3px 10px rgba(0,0,0,0.7), 0 0 20px rgba(0,0,0,0.5);
+            color: #ffffff;
+            letter-spacing: 1px;
+            opacity: 0;
+            animation: fadeInUp 1s ease-out 0.3s forwards;
+        }
+
+        .login-title {
+            font-family: 'Pangolin', cursive;
+            font-size: 150px;
+            font-weight: 400;
+            margin-bottom: 30px;
+            text-shadow: 0 4px 20px rgba(0,0,0,0.8), 0 0 30px rgba(0,0,0,0.6);
+            color: #ffffff;
+            letter-spacing: 2px;
+            opacity: 0;
+            animation: fadeInUp 1s ease-out 0.6s forwards;
+        }
+
+        .login-description {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 20px;
+            margin-bottom: 40px;
+            text-shadow: 0 3px 10px rgba(0,0,0,0.7), 0 0 20px rgba(0,0,0,0.5);
+            color: #ffffff;
+            line-height: 1.6;
+            font-weight: 400;
+            opacity: 0;
+            animation: fadeInUp 1s ease-out 0.9s forwards;
+        }
+
+        .btn-learn-more {
+            background: #ffffff;
+            color: #000000;
+            border: 2px solid #ffffff;
+            padding: 16px 40px;
+            font-size: 16px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: 'Montserrat', sans-serif;
+            opacity: 0;
+            animation: fadeInUp 1s ease-out 1.2s forwards;
+            box-shadow: 0 4px 12px rgba(135, 206, 235, 0.4);
+            border-radius: 8px;
+        }
+
+        .btn-learn-more:hover {
+            background: #6BB6D6;
+            border-color: #6BB6D6;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(135, 206, 235, 0.5);
+        }
+
+        .login-form {
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 16px;
+            padding: 50px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+            backdrop-filter: blur(10px);
+            display: none;
+            opacity: 0;
+            animation: fadeIn 0.5s ease-out forwards;
+            margin-top: 30px;
+        }
+
+        .login-form.show {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 10px;
+            color: #333;
+            font-weight: 600;
+            font-size: 14px;
+            font-family: 'Montserrat', sans-serif;
+            letter-spacing: 0.5px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 15px;
+            transition: all 0.3s;
+            color: #333;
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #28a745;
+            box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.1);
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 16px;
+            background: #87CEEB;
+            color: #ffffff;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(135, 206, 235, 0.4);
+            margin-top: 10px;
+            font-family: 'Montserrat', sans-serif;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .btn-login:hover {
+            background: #ffffff;
+            box-shadow: 0 6px 16px rgba(255, 255, 255, 0.5);
+        }
+
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(40, 167, 69, 0.4);
+        }
+
+        .btn-login:active {
+            transform: translateY(0);
+        }
+
+        .form-footer {
+            margin-top: 24px;
+            text-align: center;
+            color: #6c757d;
+            font-size: 14px;
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        .form-footer a {
+            color: #28a745;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .form-footer a:hover {
+            text-decoration: underline;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .login-title {
+                font-size: 80px;
+            }
+            .login-subtitle {
+                font-size: 24px;
+            }
+            .login-description {
+                font-size: 18px;
+            }
+            .login-form {
+                padding: 30px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <div class="overlay"></div>
+    <div class="login-container">
+        <div class="login-subtitle">Спутниковый мониторинг</div>
+        <div class="login-title">ТҮШҮМ</div>
+        <div class="login-description">Онлайн платформа для анализа состояние сельхозземель</div>
+        <button class="btn-learn-more" id="learnMoreBtn">Вход</button>
+        <div class="login-form" id="loginFormContainer">
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" placeholder="Введите ваш email" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Пароль</label>
+                    <input type="password" id="password" name="password" placeholder="Введите пароль" required>
+                </div>
+                <button type="submit" class="btn-login">Войти</button>
+                <div class="form-footer">
+                    <a href="#">Забыли пароль?</a> | <a href="#">Регистрация</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Проверка загрузки Leaflet
+        if (typeof L === 'undefined') {
+            console.error('Leaflet не загружен');
+            document.body.innerHTML = '<div style="padding: 50px; text-align: center;"><h1>Ошибка загрузки</h1><p>Проверьте подключение к интернету и обновите страницу</p></div>';
+        } else {
+            // Инициализация карты Кыргызстана с рельефом
+            try {
+                const map = L.map('map', {
+                    center: [41.2044, 74.7661], // Центр Кыргызстана
+                    zoom: 7,
+                    zoomControl: false,
+                    attributionControl: false
+                });
+
+                // Используем спутниковые снимки с рельефом для 3D эффекта
+                L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                    attribution: '',
+                    maxZoom: 19
+                }).addTo(map);
+
+                // Добавляем слой рельефа для усиления 3D эффекта
+                L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+                    attribution: '',
+                    maxZoom: 17,
+                    opacity: 0.3
+                }).addTo(map);
+            } catch (error) {
+                console.error('Ошибка инициализации карты:', error);
+            }
+
+            // Обработка кнопки "Вход"
+            document.addEventListener('DOMContentLoaded', function() {
+                const learnMoreBtn = document.getElementById('learnMoreBtn');
+                const loginFormContainer = document.getElementById('loginFormContainer');
+                const loginForm = document.getElementById('loginForm');
+
+                if (learnMoreBtn && loginFormContainer) {
+                    learnMoreBtn.addEventListener('click', function() {
+                        loginFormContainer.classList.add('show');
+                        learnMoreBtn.style.display = 'none';
+                    });
+                }
+
+                if (loginForm) {
+                    loginForm.addEventListener('submit', function(e) {
+                        e.preventDefault();
+                        const email = document.getElementById('email').value;
+                        const password = document.getElementById('password').value;
+                        
+                        // Простая проверка (в реальном приложении здесь будет запрос к серверу)
+                        if (email && password) {
+                            // Перенаправление на главную страницу
+                            window.location.href = 'index.html';
+                        } else {
+                            alert('Пожалуйста, заполните все поля');
+                        }
+                    });
+                }
+            });
+        }
+    </script>
+</body>
+</html>

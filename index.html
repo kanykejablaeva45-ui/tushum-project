@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Түшүм - Спутниковый мониторинг сельхозземель</title>
+    <link rel="icon" type="image/png" href="favicon-removebg-preview.png">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Левая боковая панель навигации -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1 class="logo">Түшүм</h1>
+                <p class="subtitle">Спутниковый мониторинг</p>
+            </div>
+            
+            <nav class="nav-menu">
+                <div class="nav-section">
+                    <h3 class="nav-section-title">Клиенты</h3>
+                </div>
+                
+                <ul class="nav-list">
+                    <li class="nav-item active" data-panel="panel-map">
+                        <span class="nav-icon">🗺️</span>
+                        <span class="nav-text">Карта</span>
+                    </li>
+                    <li class="nav-item" data-panel="panel-rotation">
+                        <span class="nav-icon">🌾</span>
+                        <span class="nav-text">Севооборот</span>
+                    </li>
+                    <li class="nav-item" data-panel="panel-works">
+                        <span class="nav-icon">🔧</span>
+                        <span class="nav-text">Работы</span>
+                    </li>
+                    <li class="nav-item" data-panel="panel-inspections">
+                        <span class="nav-icon">🔍</span>
+                        <span class="nav-text">Осмотры</span>
+                    </li>
+                    <li class="nav-item" data-panel="panel-weather">
+                        <span class="nav-icon">🌤️</span>
+                        <span class="nav-text">Погода</span>
+                    </li>
+                    <li class="nav-item" data-panel="panel-reference">
+                        <span class="nav-icon">📚</span>
+                        <span class="nav-text">Справочники</span>
+                    </li>
+                    <li class="nav-item" data-panel="panel-analytics">
+                        <span class="nav-icon">📊</span>
+                        <span class="nav-text">Аналитика</span>
+                    </li>
+                    <li class="nav-item" id="alertsNavBtn" data-panel="panel-alerts">
+                        <span class="nav-icon">🔔</span>
+                        <span class="nav-text">Оповещения</span>
+                    </li>
+                </ul>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="region-selector">
+                    <select id="regionSelect" class="region-select">
+                        <option value="all">Все регионы</option>
+                        <option value="bishkek">Бишкек</option>
+                        <option value="chui">Чуйская область</option>
+                        <option value="issyk-kul">Иссык-Кульская область</option>
+                        <option value="naryn">Нарынская область</option>
+                        <option value="talas">Таласская область</option>
+                        <option value="osh">Ошская область</option>
+                        <option value="jalal-abad">Джалал-Абадская область</option>
+                        <option value="batken">Баткенская область</option>
+                    </select>
+                </div>
+                <div class="mapbox-attribution">
+                    <span>mapbox</span>
+                    <span class="satellite-icon">🛰️</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Основная область контента -->
+        <main class="main-content">
+            <div class="content-panels">
+                <section id="panel-map" class="content-panel active">
+                    <div class="map-controls">
+                        <div class="map-tabs">
+                            <button class="map-tab active" data-source="bing">Спутник Bing</button>
+                            <button class="map-tab" data-source="mapbox">Спутник Mapbox</button>
+                            <button class="map-tab" data-source="scheme">Схема</button>
+                        </div>
+                        
+                        <div class="map-options">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="showFill" checked>
+                                <span>Отображать заливку</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="showWeatherStations">
+                                <span>Отображать погодные станции</span>
+                            </label>
+                        </div>
+
+                        <div class="map-actions">
+                            <button class="btn-primary" id="startDrawBtn" style="width:auto; padding:10px 16px;">Добавить поле</button>
+                            <button class="btn-primary danger" id="deleteFieldBtn" style="width:auto; padding:10px 16px;">Удалить поле</button>
+                        </div>
+                    </div>
+                    <div id="map" class="map-container"></div>
+                </section>
+
+                <section id="panel-rotation" class="content-panel">
+                    <div class="panel-header">
+                        <div>
+                            <h2>Севооборот</h2>
+                            <p>Планируйте культуры по годам и полям</p>
+                        </div>
+                        <button class="btn-primary secondary-action" id="addRotationBtn">Добавить план (ИИ)</button>
+                    </div>
+                    <div class="panel-body">
+                        <div class="panel-card">
+                            <div class="panel-card-title">Быстрый поиск</div>
+                            <div class="inline-inputs">
+                                <input type="text" class="panel-input" id="rotationFieldInput" placeholder="Название поля">
+                                <input type="text" class="panel-input" id="rotationCropInput" placeholder="Культура">
+                                <input type="text" class="panel-input" id="rotationIntermediateInput" placeholder="Промежуточная культура">
+                                <input type="text" class="panel-input" id="rotationLastInput" placeholder="Последующая культура">
+                                <select class="panel-input" id="rotationYearInput">
+                                    <option>2025</option>
+                                    <option>2026</option>
+                                    <option>2027</option>
+                                </select>
+                                <button class="btn-primary ghost" id="rotationFindBtn">Найти</button>
+                            </div>
+                        </div>
+                        <div class="empty-state">
+                            <div class="empty-title">Нет данных по севообороту</div>
+                            <p>Добавьте первый план, чтобы видеть историю культур и рекомендации.</p>
+                            <button class="btn-primary" id="emptyAddRotation">Добавить план (ИИ)</button>
+                        </div>
+                        <div class="ai-results" id="rotationResults"></div>
+                    </div>
+                </section>
+
+                <section id="panel-works" class="content-panel">
+                    <div class="panel-header">
+                        <div>
+                            <h2>Работы</h2>
+                            <p>Управляйте задачами и статусами по полям</p>
+                        </div>
+                        <button class="btn-primary secondary-action" id="addWorkBtn">Новая работа (ИИ)</button>
+                    </div>
+                    <div class="panel-body">
+                        <div class="panel-card">
+                            <div class="panel-card-title">Фильтр</div>
+                            <div class="inline-inputs">
+                                <select class="panel-input">
+                                    <option>Все статусы</option>
+                                    <option>Запланировано</option>
+                                    <option>В работе</option>
+                                    <option>Завершено</option>
+                                </select>
+                                <input type="text" class="panel-input" placeholder="Исполнитель">
+                                <button class="btn-primary ghost">Применить</button>
+                            </div>
+                        </div>
+                        <div class="panel-card">
+                            <div class="panel-card-title">Технологические карты</div>
+                            <div class="inline-inputs">
+                                <input type="text" class="panel-input" placeholder="Культура или поле">
+                                <input type="text" class="panel-input" placeholder="Автор">
+                                <button class="btn-primary ghost" id="searchTechCardsBtn">Найти</button>
+                            </div>
+                            <p class="panel-hint">Шаблоны операций, материалов и норм доступны здесь.</p>
+                            <div class="ai-results" id="techResults"></div>
+                        </div>
+                        <div class="empty-state">
+                            <div class="empty-title">Список работ пуст</div>
+                            <p>Добавьте задачи, чтобы следить за сроками и ответственными.</p>
+                            <button class="btn-primary" id="emptyAddWork">Добавить работу (ИИ)</button>
+                        </div>
+                        <div class="ai-results" id="worksResults"></div>
+                    </div>
+                </section>
+
+                <section id="panel-inspections" class="content-panel">
+                    <div class="panel-header">
+                        <div>
+                            <h2>Осмотры</h2>
+                            <p>Фиксируйте результаты обходов и замечаний</p>
+                        </div>
+                        <button class="btn-primary secondary-action" id="addInspectionBtn">Новый осмотр</button>
+                    </div>
+                    <div class="panel-body">
+                        <div class="panel-card">
+                            <div class="panel-card-title">Фильтр</div>
+                            <div class="inline-inputs">
+                                <input type="text" class="panel-input" placeholder="Поле">
+                                <select class="panel-input">
+                                    <option>Все типы</option>
+                                    <option>Болезни</option>
+                                    <option>Вредители</option>
+                                    <option>Сорняки</option>
+                                </select>
+                                <button class="btn-primary ghost">Искать</button>
+                            </div>
+                        </div>
+                        <div class="empty-state">
+                            <div class="empty-title">Осмотры не добавлены</div>
+                            <p>Создайте запись, чтобы фиксировать проблемы на поле.</p>
+                            <button class="btn-primary" id="emptyAddInspection">Добавить осмотр</button>
+                        </div>
+                        <div class="ai-results" id="inspectionResults"></div>
+                    </div>
+                </section>
+
+                <section id="panel-weather" class="content-panel">
+                    <div class="panel-header">
+                        <div>
+                            <h2>Погода</h2>
+                            <p>Следите за прогнозами и фактическими данными</p>
+                        </div>
+                        <button class="btn-primary secondary-action" id="refreshWeatherBtn">Обновить</button>
+                    </div>
+                    <div class="panel-body">
+                        <div class="panel-card">
+                            <div class="panel-card-title">Выбор местоположения</div>
+                            <div class="inline-inputs">
+                                <select class="panel-input" id="weatherFieldSelect">
+                                    <option value="all">Все поля</option>
+                                </select>
+                                <select class="panel-input" id="weatherCitySelect">
+                                    <option value="bishkek">Бишкек</option>
+                                    <option value="osh">Ош</option>
+                                    <option value="jalal-abad">Джалал-Абад</option>
+                                    <option value="karakol">Каракол</option>
+                                    <option value="naryn">Нарын</option>
+                                    <option value="talas">Талас</option>
+                                    <option value="batken">Баткен</option>
+                                    <option value="kant">Кант</option>
+                                    <option value="tokmok">Токмок</option>
+                                    <option value="kara-balta">Кара-Балта</option>
+                                </select>
+                                <select class="panel-input" id="weatherPeriodSelect">
+                                    <option value="week">Неделя</option>
+                                    <option value="month">Месяц</option>
+                                    <option value="year">Год</option>
+                                </select>
+                                <button class="btn-primary ghost" id="showWeatherBtn">Показать</button>
+                            </div>
+                        </div>
+                        <div class="empty-state">
+                            <div class="empty-title">Данные о погоде появятся здесь</div>
+                            <p>Подключите станцию или выберите поле для просмотра.</p>
+                        </div>
+                        <div class="ai-results" id="weatherResults"></div>
+                    </div>
+                </section>
+
+                <section id="panel-reference" class="content-panel">
+                    <div class="panel-header">
+                        <div>
+                            <h2>Справочники</h2>
+                            <p>Единые классификаторы культур, материалов и техники</p>
+                        </div>
+                        <button class="btn-primary secondary-action" id="addReferenceBtn">Добавить запись (ИИ)</button>
+                    </div>
+                    <div class="panel-body">
+                        <div class="panel-card">
+                            <div class="panel-card-title">Каталог</div>
+                            <div class="inline-inputs">
+                                <select class="panel-input">
+                                    <option>Культуры</option>
+                                    <option>Препараты</option>
+                                    <option>Техника</option>
+                                    <option>Контрагенты</option>
+                                </select>
+                                <input type="text" class="panel-input" id="referenceQuery" placeholder="Поиск по названию или вопрос">
+                                <button class="btn-primary ghost" id="searchReferenceBtn">Искать</button>
+                            </div>
+                        </div>
+                        <div class="panel-card">
+                            <div class="panel-card-title">Чат-бот советник по урожаю</div>
+                            <div class="chat-messages" id="referenceChatMessages"></div>
+                            <div class="chat-input-row">
+                                <input type="text" id="referenceChatInput" class="panel-input" placeholder="Задайте вопрос об урожае...">
+                                <button class="btn-primary" id="referenceChatSendBtn" style="width:auto; padding:12px 16px;">Отправить</button>
+                            </div>
+                        </div>
+                        <div class="empty-state">
+                            <div class="empty-title">Справочник пока пуст</div>
+                            <p>Добавьте элементы для быстрого использования в других разделах.</p>
+                            <button class="btn-primary" id="emptyAddReference">Добавить элемент (ИИ)</button>
+                        </div>
+                        <div class="ai-results" id="referenceResults"></div>
+                    </div>
+                </section>
+
+                <section id="panel-analytics" class="content-panel">
+                    <div class="panel-header">
+                        <div>
+                            <h2>Аналитика</h2>
+                            <p>Сводные показатели по урожайности и затратам</p>
+                        </div>
+                        <button class="btn-primary secondary-action" id="buildAnalyticsBtn">Сформировать отчет (ИИ)</button>
+                    </div>
+                    <div class="panel-body">
+                        <div class="panel-card">
+                            <div class="panel-card-title">Параметры отчета</div>
+                            <div class="inline-inputs">
+                                <select class="panel-input" id="reportMetric">
+                                    <option value="yield">Урожайность</option>
+                                    <option value="costs">Затраты</option>
+                                    <option value="weather">Погодные риски</option>
+                                    <option value="resources">Ресурсы</option>
+                                </select>
+                                <select class="panel-input" id="reportRange">
+                                    <option value="season">За сезон</option>
+                                    <option value="year">За год</option>
+                                    <option value="custom">Произвольно</option>
+                                </select>
+                                <button class="btn-primary ghost" id="buildAnalyticsParamsBtn">Построить</button>
+                            </div>
+                        </div>
+                        <div class="empty-state">
+                            <div class="empty-title">Отчеты будут тут</div>
+                            <p>Выберите параметры и сформируйте первый отчет.</p>
+                        </div>
+                        <div class="panel-card">
+                            <div class="panel-card-title">График</div>
+                            <canvas id="analyticsChart" height="200"></canvas>
+                        </div>
+                        <div class="ai-results" id="analyticsResults"></div>
+                    </div>
+                </section>
+
+                <section id="panel-alerts" class="content-panel">
+                    <div class="panel-header">
+                        <div>
+                            <h2>Оповещения</h2>
+                            <p>Настройте уведомления и просматривайте активные</p>
+                        </div>
+                        <button class="btn-primary secondary-action" id="openAlertSettings">Настройки</button>
+                    </div>
+                    <div class="panel-body">
+                        <div class="panel-card">
+                            <div class="panel-card-title">Активные оповещения</div>
+                            <p>Используйте кнопку «Настройки», чтобы добавить новое оповещение.</p>
+                        </div>
+                        <div class="embedded-alerts" id="embeddedAlerts"></div>
+                    </div>
+                </section>
+            </div>
+        </main>
+
+        <!-- Правая боковая панель со списком полей -->
+        <aside class="fields-panel">
+            <div class="fields-header">
+                <h2>Поля</h2>
+                <div class="search-container">
+                    <input type="text" id="fieldSearch" class="search-input" placeholder="Поиск по полю...">
+                    <button class="search-filter-btn">🔍</button>
+                    <button class="search-type-btn">T</button>
+                </div>
+            </div>
+            
+            <div class="fields-list" id="fieldsList">
+                <!-- Поля будут добавлены динамически через JavaScript -->
+            </div>
+        </aside>
+    </div>
+
+    <!-- Модальное окно для настроек оповещений -->
+    <div id="alertModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Настройка оповещений</h2>
+                <span class="close-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="alert-categories">
+                    <h3>Что вы хотите отслеживать?</h3>
+                    <div class="category-grid">
+                        <div class="category-item" data-category="weather">
+                            <div class="category-icon">☁️</div>
+                            <div class="category-label">Погодные отчеты</div>
+                        </div>
+                        <div class="category-item" data-category="precipitation">
+                            <div class="category-icon">🌧️</div>
+                            <div class="category-label">Осадки</div>
+                        </div>
+                        <div class="category-item" data-category="disease">
+                            <div class="category-icon">🍃</div>
+                            <div class="category-label">Болезни</div>
+                        </div>
+                        <div class="category-item" data-category="fire">
+                            <div class="category-icon">🔥</div>
+                            <div class="category-label">Пожар</div>
+                        </div>
+                        <div class="category-item" data-category="soil">
+                            <div class="category-icon">🌱</div>
+                            <div class="category-label">Состояние почвы</div>
+                        </div>
+                        <div class="category-item" data-category="satellite">
+                            <div class="category-icon">🛰️</div>
+                            <div class="category-label">Спутник</div>
+                        </div>
+                        <div class="category-item" data-category="floods">
+                            <div class="category-icon">🌊</div>
+                            <div class="category-label">Наводнения</div>
+                        </div>
+                        <div class="category-item" data-category="pests">
+                            <div class="category-icon">🐛</div>
+                            <div class="category-label">Вредители</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="alertConfig" class="alert-config hidden">
+                    <h3 id="alertTitle">Настройка оповещения</h3>
+                    <p id="alertDescription">Мы сообщим вам о важных изменениях</p>
+                    
+                    <div class="form-group">
+                        <label>Местоположение:</label>
+                        <select id="alertLocation" class="form-control">
+                            <option>Выберите поле</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Какие события:</label>
+                        <div class="radio-group">
+                            <label class="radio-label">
+                                <input type="radio" name="eventType" value="all" checked>
+                                <span>Все события</span>
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="eventType" value="critical">
+                                <span>Критические</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Способ доставки:</label>
+                        <select id="alertDelivery" class="form-control">
+                            <option value="sms">SMS</option>
+                            <option value="email">Email</option>
+                            <option value="push">Push-уведомление</option>
+                        </select>
+                    </div>
+                    
+                    <button class="btn-primary" id="addAlertBtn">Добавить оповещение</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Панель активных оповещений -->
+    <div id="alertsPanel" class="alerts-panel hidden">
+        <div class="alerts-header">
+            <h2>Активные оповещения</h2>
+            <button class="close-alerts">&times;</button>
+        </div>
+        <div class="alerts-list" id="alertsList">
+            <!-- Оповещения будут добавлены динамически -->
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
+
